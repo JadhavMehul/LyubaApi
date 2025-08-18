@@ -1,0 +1,19 @@
+{
+  "name": "lyubaapi",
+  "version": "1.0.0",
+  "description": "API for Lyuba Dating App",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mehul Jadhav (www.mehuljadhav.com)",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
