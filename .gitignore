@@ -51,3 +51,6 @@ build/
 *.swp
 *.bak
 *.tmp
+
+#Firebase Keys
+serviceAccountKey.json
