@@ -1,6 +1,6 @@
-const admin = require("firebase-admin");
-const dotenv = require("dotenv");
-const serviceAccount = require("../serviceAccountKey.json"); 
+const admin = require('firebase-admin');
+const dotenv = require('dotenv');
+const serviceAccount = require('../serviceAccountKey.json');
 dotenv.config();
 
 admin.initializeApp({
@@ -8,4 +8,5 @@ admin.initializeApp({
 });
 
 const firestore = admin.firestore();
-module.exports = firestore;
+const auth = admin.auth();
+module.exports = { firestore, auth };
