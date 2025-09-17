@@ -5,8 +5,10 @@ dotenv.config();
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
 });
 
 const firestore = admin.firestore();
-const auth = admin.auth()
-module.exports = {firestore, auth};
+const auth = admin.auth();
+const storage = admin.storage().bucket();
+module.exports = {firestore, auth, storage};
