@@ -1,4 +1,5 @@
 const { firestore, auth, storage } = require('../config/firebaseConfig');
+const { v4: uuidv4 } = require("uuid");
 
 // exports.authenticateUser = async (req, res) => {
 //   try {
@@ -56,12 +57,14 @@ const { firestore, auth, storage } = require('../config/firebaseConfig');
 
 
 exports.socialAuth = async (req, res) => {
- 
+  
+  
   const { idToken } = req.body; // Firebase ID token from frontend
-
+  
   if (!idToken) {
     return res.status(400).json({ error: "ID Token required" });
   }
+  console.log(idToken);
 
   try {
     // Verify Firebase token
@@ -189,17 +192,87 @@ exports.authenticateUser = async (req, res) => {
 
 }
 
-exports.registerUser = async (req, res) => {
+// exports.registerUser = async (req, res) => {
 
   
+//   try {
+//     const { uid, email, firstName, lastName, birthdate, gender, city, pincode, interests, personalData, provider } = req.body;
+//     const files = req.files; // Multer attaches files here
+
+//     console.log("Received data:", req.body);
+//     console.log("Received files:", files?.length);
+
+//     // Upload files to Firebase Storage
+//     const uploadedUrls = [];
+
+//     if (files && files.length > 0) {
+//       for (const file of files) {
+//         const fileName = `users/${uid}/photos/${file.originalname}`;
+//         const blob = storage.file(fileName);
+
+//         const blobStream = blob.createWriteStream({
+//           metadata: {
+//             contentType: file.mimetype,
+//           },
+//         });
+
+//         // Upload promise wrapper
+//         await new Promise((resolve, reject) => {
+//           blobStream.on("error", (err) => reject(err));
+//           blobStream.on("finish", async () => {
+//             // Public URL
+//             const publicUrl = `https://storage.googleapis.com/${storage.name}/${fileName}`;
+//             uploadedUrls.push(publicUrl);
+//             resolve();
+//           });
+//           blobStream.end(file.buffer);
+//         });
+//       }
+//     }
+
+//     // Save user in Firestore
+//     await firestore.collection("users").doc(uid).set(
+//       {
+//         uid,
+//         email,
+//         firstName,
+//         lastName,
+//         birthdate, 
+//         gender, 
+//         city, 
+//         pincode, 
+//         interests, 
+//         personalData, 
+//         provider,
+//         pictures: uploadedUrls,
+//         createdAt: new Date(),
+//       },
+//       { merge: true }
+//     );
+
+//     return res.status(201).json({
+//       success: true,
+//       message: "User registered successfully",
+//       pictures: uploadedUrls,
+//     });
+//   } catch (error) {
+//     console.error("Register error:", error);
+//     return res.status(500).json({ success: false, error: error.message });
+//   }
+// }
+
+
+exports.registerUser = async (req, res) => {
   try {
     const { uid, email, firstName, lastName, birthdate, gender, city, pincode, interests, personalData, provider } = req.body;
     const files = req.files; // Multer attaches files here
 
+    console.log("HIIIIII");
+    
+
     console.log("Received data:", req.body);
     console.log("Received files:", files?.length);
 
-    // Upload files to Firebase Storage
     const uploadedUrls = [];
 
     if (files && files.length > 0) {
@@ -207,18 +280,26 @@ exports.registerUser = async (req, res) => {
         const fileName = `users/${uid}/photos/${file.originalname}`;
         const blob = storage.file(fileName);
 
+        // generate unique token for Firebase-style URL
+        const token = uuidv4();
+
         const blobStream = blob.createWriteStream({
           metadata: {
             contentType: file.mimetype,
+            metadata: {
+              firebaseStorageDownloadTokens: token, // this is the key 🔑
+            },
           },
         });
 
-        // Upload promise wrapper
         await new Promise((resolve, reject) => {
           blobStream.on("error", (err) => reject(err));
           blobStream.on("finish", async () => {
-            // Public URL
-            const publicUrl = `https://storage.googleapis.com/${storage.name}/${fileName}`;
+            // Firebase-style URL
+            const bucketName = storage.name;
+            console.log(bucketName);
+            const encodedPath = encodeURIComponent(fileName);
+            const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodedPath}?alt=media&token=${token}`;
             uploadedUrls.push(publicUrl);
             resolve();
           });
@@ -227,6 +308,9 @@ exports.registerUser = async (req, res) => {
       }
     }
 
+    console.log(uploadedUrls);
+    
+
     // Save user in Firestore
     await firestore.collection("users").doc(uid).set(
       {
@@ -234,12 +318,12 @@ exports.registerUser = async (req, res) => {
         email,
         firstName,
         lastName,
-        birthdate, 
-        gender, 
-        city, 
-        pincode, 
-        interests, 
-        personalData, 
+        birthdate,
+        gender,
+        city,
+        pincode,
+        interests,
+        personalData,
         provider,
         pictures: uploadedUrls,
         createdAt: new Date(),
@@ -256,4 +340,4 @@ exports.registerUser = async (req, res) => {
     console.error("Register error:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
-}
+};
