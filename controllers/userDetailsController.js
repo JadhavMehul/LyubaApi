@@ -41,9 +41,11 @@ exports.profileProfileData = async (req, res) => {
     }
 
     const userData = userDoc.data();
-    const myPreference = userData.personalData?.genderPreference;
+    const myGenderPreference = userData.personalData?.genderPreference;
+    const myCityPreference = userData.city;
+    
 
-    const result = await profileByGender(myPreference);
+    const result = await profileByGender(myGenderPreference, myCityPreference);
 
     if (!result.data || result.data.length === 0) {
       return res.status(404).json({ message: "No matching users found" });
@@ -126,5 +128,32 @@ exports.addUserInLoop = async (req, res) => {
         console.error(error);
         res.status(500).send({ error: "Failed to upload users", details: error.message });
     }
+
+}
+
+exports.test = async (req, res) => {
+
+  try {
+    const userRef = firestore.collection("users").where("city", "==", "Mumbai").where("gender", "==", "male");
+    const snapshot = await userRef.get();
+
+    if (snapshot.empty) {
+        return { status: 404, message: "No users found with this gender" };
+    }
+    const users = [];
+    snapshot.forEach(doc => {
+      users.push({ id: doc.id, ...doc.data() });
+    });
+
+    res.status(200).send({ data: users });
+
+    
+
+  } catch (error) {
+    console.error(error);
+    res.status(404).send({ error: "Failed to get user data", details: error.message });
+  }
+
+ 
 
 }

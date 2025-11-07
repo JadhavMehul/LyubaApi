@@ -1,12 +1,16 @@
 const { firestore } = require("../config/firebaseConfig");
 
-const profileByGender = async (targetGender) => {
+const profileByGender = async (targetGender, targetCity) => {
     try {
         if (!targetGender) {
             return { status: 400, message: "The 'gender' parameter is required." };
         }
-
-        const userRef = firestore.collection("users").where("gender", "==", targetGender);
+        
+        if (!targetCity) {
+            return { status: 400, message: "The 'gender' parameter is required." };
+        }
+        
+        const userRef = firestore.collection("users").where("city", "==", targetCity).where("gender", "==", targetGender);
         const snapshot = await userRef.get();
 
         if (snapshot.empty) {
