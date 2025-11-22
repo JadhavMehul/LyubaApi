@@ -11,4 +11,5 @@ admin.initializeApp({
 const firestore = admin.firestore();
 const auth = admin.auth();
 const storage = admin.storage().bucket();
-module.exports = {firestore, auth, storage};
+const FieldValue = admin.firestore.FieldValue;
+module.exports = {firestore, auth, storage, FieldValue};

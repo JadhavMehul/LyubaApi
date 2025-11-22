@@ -1,4 +1,4 @@
-const { firestore } = require("../config/firebaseConfig");
+const { firestore, FieldValue } = require("../config/firebaseConfig");
 const { profileByGender, getMatchScore } = require("../utils/usersDetailsUtils");
 
 exports.profileData = async (req, res) => {
@@ -25,7 +25,7 @@ exports.profileData = async (req, res) => {
 
 }
 
-exports.profileProfileData = async (req, res) => {
+exports.peopleProfileData = async (req, res) => {
   try {
     const { userId } = req.body;
 
@@ -155,5 +155,36 @@ exports.test = async (req, res) => {
   }
 
  
+
+}
+
+exports.swypedUser = async (req, res) => {
+
+  try {
+    
+    const { userId, swipedUserId, swypedStatus } = req.body;
+
+    if (!userId || !swipedUserId || !swypedStatus) {
+      return res.status(400).json({ error: "unable to receive userId or swipedUserId or swypedStatus" });
+    }
+
+    const userRef = firestore.collection("swyped").doc(userId);
+    await userRef.set({
+      swypedData: FieldValue.arrayUnion({
+        swypedTo: swipedUserId,
+        swypedStatus: swypedStatus,
+        createdAt: new Date(),
+      })
+    }, { merge: true }).then(() => {
+      return res.status(201).json({
+        success: true,
+        message: "Swyped Successfully"
+      });
+    });
+
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ error: error.message });
+  }
 
 }
