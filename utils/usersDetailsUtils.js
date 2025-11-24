@@ -1,13 +1,13 @@
 const { firestore } = require("../config/firebaseConfig");
 
-const profileByGender = async (targetGender, targetCity) => {
+const profileByGender = async (targetGender, targetCity, myUserId) => {
     try {
         if (!targetGender) {
             return { status: 400, message: "The 'gender' parameter is required." };
         }
         
         if (!targetCity) {
-            return { status: 400, message: "The 'gender' parameter is required." };
+            return { status: 400, message: "The 'city' parameter is required." };
         }
         
         const userRef = firestore.collection("users").where("city", "==", targetCity).where("gender", "==", targetGender);
@@ -22,7 +22,26 @@ const profileByGender = async (targetGender, targetCity) => {
             users.push({ id: doc.id, ...doc.data() });
         });
 
-        return { status: 200, data: users };
+
+        const swypedRef = firestore.collection("swyped").doc(myUserId);
+        const swypedSnap = await swypedRef.get();
+
+        if (!swypedSnap.exists) {
+            return { status: 200, data: users };
+        }
+
+        const swypedData = swypedSnap.data();
+
+        const swypedToList = [];
+
+        swypedData.swypedData.forEach(doc => {
+            swypedToList.push(doc.swypedTo); 
+        });
+
+        const filteredUsers = users.filter(u => !swypedToList.includes(u.id));
+        
+        return { status: 200, data: filteredUsers };
+        
     } catch (error) {
         console.error("Error getting documents:", error);
         return { status: 500, error: error.message };

@@ -45,7 +45,7 @@ exports.peopleProfileData = async (req, res) => {
     const myCityPreference = userData.city;
     
 
-    const result = await profileByGender(myGenderPreference, myCityPreference);
+    const result = await profileByGender(myGenderPreference, myCityPreference, userId);
 
     if (!result.data || result.data.length === 0) {
       return res.status(404).json({ message: "No matching users found" });
