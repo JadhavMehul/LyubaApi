@@ -168,20 +168,33 @@ exports.swypedUser = async (req, res) => {
       return res.status(400).json({ error: "unable to receive userId or swipedUserId or swypedStatus" });
     }
 
-    const userRef = firestore.collection("swyped").doc(userId);
-    await userRef.set({
-      swypedData: FieldValue.arrayUnion({
+    const batch = firestore.batch();
+
+    const userIdRef = firestore.collection("swyped").doc(userId);
+    batch.set(userIdRef, {
+      swypedByMe: FieldValue.arrayUnion({
         swypedTo: swipedUserId,
         swypedStatus: swypedStatus,
         createdAt: new Date(),
       })
-    }, { merge: true }).then(() => {
-      return res.status(201).json({
-        success: true,
-        message: "Swyped Successfully"
-      });
-    });
+    }, { merge: true });
 
+    const swipedUserIdRef = firestore.collection("swyped").doc(swipedUserId);
+    batch.set(swipedUserIdRef, {
+      swypedByThem: FieldValue.arrayUnion({
+        swypedBy: userId,
+        swypedStatus: swypedStatus,
+        createdAt: new Date(),
+      })
+    }, { merge: true });
+
+    await batch.commit();
+    
+    return res.status(201).json({
+      success: true,
+      message: "Swyped Successfully"
+    });
+    
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({ error: error.message });
