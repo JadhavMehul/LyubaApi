@@ -201,3 +201,65 @@ exports.swypedUser = async (req, res) => {
   }
 
 }
+
+exports.likedMe = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: "unable to receive userId" });
+    }
+
+    // 1. Fetch the user's swiped data
+    const userRef = firestore.collection("swyped").doc(userId);
+    const snapshot = await userRef.get();
+    
+    // Check if the document exists and has the necessary data
+    if (!snapshot.exists || !snapshot.data().swypedByThem) {
+        return res.status(200).json({
+            success: true,
+            data: [] // No one has swiped on this user yet
+        });
+    }
+
+    const snapData = snapshot.data().swypedByThem;
+
+    // 2. Filter for users who "Liked" the current user
+    let likedByUsers = snapData.filter(doc => doc.swypedStatus === "Liked");
+
+    // --- 👇 CRITICAL ADDITION: SORTING LOGIC 👇 ---
+    // Sort by createdAt._seconds in descending order (newest first)
+    likedByUsers.sort((a, b) => 
+      b.createdAt._seconds - a.createdAt._seconds
+    );
+    // --- 👆 CRITICAL ADDITION: SORTING LOGIC 👆 ---
+
+    // 3. Prepare for concurrent fetching
+    const likedByUserIds = likedByUsers.map(doc => doc.swypedBy);
+    
+    // 4. Fetch all user details concurrently using Promise.all and map
+    const userPromises = likedByUserIds.map(async (swypedByUserId) => {
+      const userDocRef = firestore.collection("users").doc(swypedByUserId);
+      const userSnapshot = await userDocRef.get();
+      
+      // Return the user data, or null/undefined if not found
+      return userSnapshot.exists ? userSnapshot.data() : null;
+    });
+
+    // Wait for all the promises to resolve
+    let users = await Promise.all(userPromises);
+    
+    // Optional: Filter out any null/undefined entries if a user doc was not found
+    users = users.filter(user => user !== null);
+
+    // 5. Send the successful response (The `users` array is now sorted)
+    return res.status(200).json({
+      success: true,
+      data: users
+    });
+
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
