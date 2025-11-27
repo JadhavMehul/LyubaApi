@@ -22,6 +22,10 @@ const profileByGender = async (targetGender, targetCity, myUserId) => {
             users.push({ id: doc.id, ...doc.data() });
         });
 
+        if (users.length === 0) { // Check length instead of snapshot.empty for clarity
+             return { status: 404, message: "No users found with this gender or city" };
+        }
+
 
         const swypedRef = firestore.collection("swyped").doc(myUserId);
         const swypedSnap = await swypedRef.get();
@@ -32,11 +36,14 @@ const profileByGender = async (targetGender, targetCity, myUserId) => {
 
         const swypedData = swypedSnap.data();
 
-        const swypedToList = [];
 
-        swypedData.swypedData.forEach(doc => {
-            swypedToList.push(doc.swypedTo); 
-        });
+        const swipedHistory = swypedData.swypedData;
+
+        if (!Array.isArray(swipedHistory) || swipedHistory.length === 0) {
+             return { status: 200, data: users };
+        }
+
+        const swypedToList = swipedHistory.map(doc => doc.swypedTo);
 
         const filteredUsers = users.filter(u => !swypedToList.includes(u.id));
         
