@@ -263,3 +263,80 @@ exports.likedMe = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+
+exports.matched = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Unable to receive userId" });
+    }
+
+    const userRef = firestore.collection("swyped").doc(userId);
+    const snapshot = await userRef.get();
+    
+    if (!snapshot.exists) {
+        return res.status(200).json({
+            success: true,
+            data: [] 
+        });
+    }
+
+    const swipedData = snapshot.data();
+
+    // 1. Identify Users Liked by the Current User (swypedByMe)
+    const likedByMe = Array.isArray(swipedData.swypedByMe)
+        ? swipedData.swypedByMe
+            .filter(doc => doc.swypedStatus === "Liked")
+            .map(doc => doc.swypedTo) 
+        : [];
+        
+    // 2. Identify Users who Liked the Current User (swypedByThem)
+    const likedThem = Array.isArray(swipedData.swypedByThem)
+        ? swipedData.swypedByThem
+            .filter(doc => doc.swypedStatus === "Liked")
+            // Sort by createdAt (newest match first) before mapping to ID
+            .sort((a, b) => b.createdAt?._seconds - a.createdAt?._seconds) 
+            .map(doc => doc.swypedBy)
+        : [];
+        
+    // 3. Find the similar ID's (The Match)
+    // A match is a user ID that exists in BOTH lists.
+    const matchedUserIds = likedThem.filter(id => likedByMe.includes(id));
+    
+    if (matchedUserIds.length === 0) {
+         return res.status(200).json({
+            success: true,
+            data: [] 
+        });
+    }
+
+    // 4. Fetch all Matched User Details concurrently
+    const userPromises = matchedUserIds.map(async (matchedId) => {
+      const userDocRef = firestore.collection("users").doc(matchedId);
+      const userSnapshot = await userDocRef.get();
+      
+      // Return the user data, or null if not found
+      return userSnapshot.exists ? userSnapshot.data() : null;
+    });
+
+    // Wait for all the promises to resolve
+    let users = await Promise.all(userPromises);
+
+    console.log(users);
+    
+    
+    // Filter out any null entries and keep the matched list clean
+    users = users.filter(user => user !== null);
+
+    return res.status(200).json({
+      success: true,
+      data: users
+    });
+
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
