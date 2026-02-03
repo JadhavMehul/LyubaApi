@@ -6,12 +6,14 @@ dotenv.config();
 const authRoutes = require("./routes/auth");
 const locationRoutes = require("./routes/location")
 const userRoutes = require("./routes/userDetails")
+const messageRoutes = require("./routes/message")
 
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/userDetails", userRoutes)
+app.use("/api/message", messageRoutes)
 
 
 const PORT = process.env.PORT || 3000;
