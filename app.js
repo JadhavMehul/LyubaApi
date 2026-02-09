@@ -1,5 +1,9 @@
 const express = require("express");
 const dotenv = require("dotenv");
+const http = require("http");
+const { initSocket } = require("./socket/socket");
+
+
 const app = express();
 dotenv.config();
 
@@ -16,5 +20,14 @@ app.use("/api/userDetails", userRoutes)
 app.use("/api/message", messageRoutes)
 
 
+
+// 🔹 Create HTTP server from express
+const server = http.createServer(app);
+
+// 🔹 Initialize Socket.io
+initSocket(server);
+
+
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
