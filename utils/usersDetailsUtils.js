@@ -19,7 +19,9 @@ const profileByGender = async (targetGender, targetCity, myUserId) => {
 
         const users = [];
         snapshot.forEach(doc => {
-            users.push({ id: doc.id, ...doc.data() });
+            if (doc.id != myUserId) {
+                users.push({ id: doc.id, ...doc.data() });
+            }
         });
 
         if (users.length === 0) { // Check length instead of snapshot.empty for clarity
@@ -36,17 +38,16 @@ const profileByGender = async (targetGender, targetCity, myUserId) => {
 
         const swypedData = swypedSnap.data();
 
-
-        const swipedHistory = swypedData.swypedData;
-
-        if (!Array.isArray(swipedHistory) || swipedHistory.length === 0) {
-             return { status: 200, data: users };
-        }
-
-        const swypedToList = swipedHistory.map(doc => doc.swypedTo);
-
-        const filteredUsers = users.filter(u => !swypedToList.includes(u.id));
+        const swipedHistory = swypedData.swypedByMe;
         
+        if (!Array.isArray(swipedHistory) || swipedHistory.length === 0) {
+            return { status: 200, data: users };
+        }
+        
+        const swypedToList = swipedHistory.map(doc => doc.swypedTo);
+        
+        const filteredUsers = users.filter(u => !swypedToList.includes(u.id));
+
         return { status: 200, data: filteredUsers };
         
     } catch (error) {

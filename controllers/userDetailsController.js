@@ -324,7 +324,7 @@ exports.matched = async (req, res) => {
     // Wait for all the promises to resolve
     let users = await Promise.all(userPromises);
 
-    console.log(users);
+    // console.log(users);
     
     
     // Filter out any null entries and keep the matched list clean
