@@ -91,22 +91,42 @@ exports.getChats = async (req, res) => {
       .orderBy("updatedAt", "desc")
       .get();
 
-    const chats = snapshot.docs.map(doc => {
-      const data = doc.data();
+    const chats = await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        const data = doc.data();
 
-      // Get the other user (important for frontend)
-      const otherUserId = data.members.find(id => id !== userId);
+        const otherUserId = data.members.find((id) => id !== userId);
+        
+        const otherUserDataQuery = await firestore.collection("users").doc(otherUserId).get();
+        const otherUserData = otherUserDataQuery.data();
+        
 
-      return {
-        conversationId: doc.id,
-        otherUserId,
-        lastMessage: data.lastMessage || "",
-        updatedAt: data.updatedAt
-      };
-    });
+        // 🔴 unread messages count
+        const unreadSnap = await firestore
+          .collection("conversations")
+          .doc(doc.id)
+          .collection("messages")
+          .where("receiverId", "==", userId)
+          .where("read", "==", false)
+          .get();
+
+        // 👤 fetch other user profile
+        const userDoc = await firestore.collection("users").doc(otherUserId).get();
+        const userData = userDoc.data() || {};
+
+        return {
+          conversationId: doc.id,
+          otherUserId,
+          name: otherUserData.firstName + " " + otherUserData.lastName || "",
+          profileImage: otherUserData.pictures[0] || "",
+          lastMessage: data.lastMessage || "",
+          updatedAt: data.updatedAt || null,
+          unreadCount: unreadSnap.size,
+        };
+      })
+    );
 
     res.status(200).json(chats);
-
   } catch (error) {
     console.error("getChats error:", error);
     res.status(500).json({ message: "Failed to fetch chats" });
