@@ -223,19 +223,36 @@ exports.likedMe = async (req, res) => {
     }
 
     const snapData = snapshot.data().swypedByThem;
+    const snapData2 = snapshot.data().swypedByMe;
+
 
     // 2. Filter for users who "Liked" the current user
     let likedByUsers = snapData.filter(doc => doc.swypedStatus === "Liked");
+    let likedByMe = snapData2.filter(doc => doc.swypedStatus === "Liked");
+
+    const swypedToSet = new Set(likedByMe.map(item => item.swypedTo));
+
+    const filteredArray = likedByUsers.filter(
+      item => !swypedToSet.has(item.swypedBy)
+    );
+
+    if (filteredArray.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [] // No one has swiped on this user yet
+      });
+    }
+    
 
     // --- 👇 CRITICAL ADDITION: SORTING LOGIC 👇 ---
     // Sort by createdAt._seconds in descending order (newest first)
-    likedByUsers.sort((a, b) => 
+    filteredArray.sort((a, b) => 
       b.createdAt._seconds - a.createdAt._seconds
     );
     // --- 👆 CRITICAL ADDITION: SORTING LOGIC 👆 ---
 
     // 3. Prepare for concurrent fetching
-    const likedByUserIds = likedByUsers.map(doc => doc.swypedBy);
+    const likedByUserIds = filteredArray.map(doc => doc.swypedBy);
     
     // 4. Fetch all user details concurrently using Promise.all and map
     const userPromises = likedByUserIds.map(async (swypedByUserId) => {
