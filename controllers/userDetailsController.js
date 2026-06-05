@@ -39,7 +39,7 @@ exports.editProfileData = async (req, res) => {
     const userDocRef = firestore.collection("users").doc(userData.uid);
 
     // Update user data (spread to avoid nesting issues)
-    await userDocRef.set(userData.editUserData, { merge: true });
+    await userDocRef.set(userData, { merge: true });
 
     // Fetch updated document
     const userDoc = await userDocRef.get();
@@ -49,6 +49,7 @@ exports.editProfileData = async (req, res) => {
     }
 
     return res.status(200).json({
+      success: true,
       message: "User updated successfully",
       user: userDoc.data()
     });
